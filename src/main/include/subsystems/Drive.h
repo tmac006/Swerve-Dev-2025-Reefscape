@@ -1,7 +1,3 @@
-// Copyright (c) FRC 2053.
-// Open Source Software; you can modify and/or share it under the terms of
-// the MIT License file in the root of this project
-
 #pragma once
 
 #include <frc2/command/SubsystemBase.h>
@@ -13,7 +9,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "Constants.h"
+#include "constants/SwerveConstants.h"
 #include "ctre/phoenix6/SignalLogger.hpp"
 #include "frc/geometry/Pose2d.h"
 #include "frc2/command/CommandPtr.h"
