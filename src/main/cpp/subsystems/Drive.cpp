@@ -6,23 +6,30 @@
 #include <pathplanner/lib/util/PathPlannerLogging.h>
 
 #include <memory>
+#include <numbers>
 #include <string>
 
 #include "Constants.h"
 #include "frc/MathUtil.h"
 #include "frc/geometry/Pose2d.h"
+#include "frc/geometry/Translation2d.h"
 #include "frc2/command/CommandPtr.h"
 #include "frc2/command/Commands.h"
 #include "pathplanner/lib/util/DriveFeedforwards.h"
+#include "pathplanner/lib/util/FlippingUtil.h"
 #include "str/DriverstationUtils.h"
 #include "str/swerve/SwerveModuleHelpers.h"
+#include "units/angle.h"
+#include "util/choreovariables.h"
 
 Drive::Drive() {
-  //SetupPathplanner();
+  importantPoses = strchoreo::LoadPoses();
+  SetupPathplanner();
 }
 
 void Drive::Periodic() {
   swerveDrive.UpdateNTEntries();
+  WhatReefZoneAmIIn();
 }
 
 void Drive::SimulationPeriodic() {
@@ -71,32 +78,206 @@ frc2::CommandPtr Drive::DriveRobotRel(
       .WithName("DriveRobotRel");
 }
 
-// void Drive::SetupPathplanner() {
-//   ppControllers = std::make_shared<pathplanner::PPHolonomicDriveController>(
-//       pathplanner::PIDConstants{consts::swerve::pathplanning::POSE_P,
-//                                 consts::swerve::pathplanning::POSE_I,
-//                                 consts::swerve::pathplanning::POSE_D},
-//       pathplanner::PIDConstants{consts::swerve::pathplanning::ROTATION_P,
-//                                 consts::swerve::pathplanning::ROTATION_I,
-//                                 consts::swerve::pathplanning::ROTATION_D});
+frc2::CommandPtr Drive::DriveToPose(std::function<frc::Pose2d()> goalPose) {
+  return frc2::cmd::Sequence(
+             frc2::cmd::RunOnce(
+                 [this, goalPose] {
+                   frc::Pose2d currentPose = GetRobotPose();
+                   frc::ChassisSpeeds currentSpeeds =
+                       swerveDrive.GetFieldRelativeSpeeds();
+                   xPoseController.Reset(currentPose.Translation().X(),
+                                         currentSpeeds.vx);
+                   yPoseController.Reset(currentPose.Translation().Y(),
+                                         currentSpeeds.vy);
+                   thetaController.Reset(currentPose.Rotation().Radians(),
+                                         currentSpeeds.omega);
+                   thetaController.EnableContinuousInput(
+                       units::radian_t{-std::numbers::pi},
+                       units::radian_t{std::numbers::pi});
+                   xPoseController.SetGoal(goalPose().X());
+                   yPoseController.SetGoal(goalPose().Y());
+                   thetaController.SetGoal(goalPose().Rotation().Radians());
+                   xPoseController.SetTolerance(
+                       consts::swerve::pathplanning::translationalPIDTolerance,
+                       consts::swerve::pathplanning::
+                           translationalVelPIDTolerance);
+                   yPoseController.SetTolerance(
+                       consts::swerve::pathplanning::translationalPIDTolerance,
+                       consts::swerve::pathplanning::
+                           translationalVelPIDTolerance);
+                   thetaController.SetTolerance(
+                       consts::swerve::pathplanning::rotationalPIDTolerance,
+                       consts::swerve::pathplanning::rotationalVelPIDTolerance);
+                   pidPoseSetpointPub.Set(goalPose());
+                 },
+                 {this})
+                 .WithName("PIDToPose Init"),
+             frc2::cmd::Run(
+                 [this, goalPose] {
+                   frc::Pose2d currentPose = GetRobotPose();
 
-//   pathplanner::AutoBuilder::configure(
-//       [this]() { return GetRobotPose(); },
-//       [this](frc::Pose2d pose) { swerveDrive.ResetPose(pose); },
-//       [this]() { return swerveDrive.GetRobotRelativeSpeeds(); },
-//       [this](frc::ChassisSpeeds speeds, pathplanner::DriveFeedforwards ff) {
-//         swerveDrive.Drive(speeds, false);
-//         swerveDrive.SetXModuleForces(ff.robotRelativeForcesX);
-//         swerveDrive.SetYModuleForces(ff.robotRelativeForcesY);
-//       },
-//       ppControllers, consts::swerve::pathplanning::config,
-//       []() { return str::IsOnRed(); }, this);
+                   xPoseController.SetGoal(goalPose().X());
+                   yPoseController.SetGoal(goalPose().Y());
+                   thetaController.SetGoal(goalPose().Rotation().Radians());
+                   pidPoseSetpointPub.Set(goalPose());
 
-//   pathplanner::PathPlannerLogging::setLogActivePathCallback(
-//       [this](std::vector<frc::Pose2d> poses) {
-//         swerveDrive.SetActivePath(poses);
-//       });
-// }
+                   units::meters_per_second_t xSpeed{xPoseController.Calculate(
+                       currentPose.Translation().X())};
+                   units::meters_per_second_t ySpeed{yPoseController.Calculate(
+                       currentPose.Translation().Y())};
+                   units::radians_per_second_t thetaSpeed{
+                       thetaController.Calculate(
+                           currentPose.Rotation().Radians())};
+
+                   swerveDrive.DriveFieldRelative(xSpeed, ySpeed, thetaSpeed,
+                                                  true);
+                 },
+                 {this})
+                 .Until([this] {
+                   return xPoseController.AtGoal() &&
+                          yPoseController.AtGoal() && thetaController.AtGoal();
+                 })
+                 .WithName("PIDToPose Run"),
+             frc2::cmd::Run([this] {
+               swerveDrive.Drive(0_mps, 0_mps, 0_deg_per_s, false);
+             }).WithName("PIDToPose Stop"))
+      .WithName("PIDToPose");
+}
+
+frc2::CommandPtr Drive::AlignToAlgae() {
+  return DriveToPose([this] {
+    if (str::IsOnRed()) {
+      return pathplanner::FlippingUtil::flipFieldPose(
+          importantPoses[WhatAlgaeToGoTo(WhatReefZoneAmIIn())]);
+
+    } else {
+      return importantPoses[WhatAlgaeToGoTo(WhatReefZoneAmIIn())];
+    }
+  });
+}
+
+frc2::CommandPtr Drive::AlignToProcessor() {
+  return DriveToPose([this] {
+    if (str::IsOnRed()) {
+      return pathplanner::FlippingUtil::flipFieldPose(
+          importantPoses["Process"]);
+
+    } else {
+      return importantPoses["Process"];
+    }
+  });
+}
+
+frc2::CommandPtr Drive::AlignToReef(std::function<bool()> leftSide) {
+  return DriveToPose([this, leftSide] {
+    if (str::IsOnRed()) {
+      return pathplanner::FlippingUtil::flipFieldPose(
+          importantPoses[WhatPoleToGoTo(WhatReefZoneAmIIn(), leftSide())]);
+
+    } else {
+      return importantPoses[WhatPoleToGoTo(WhatReefZoneAmIIn(), leftSide())];
+    }
+  });
+}
+
+std::string Drive::WhatPoleToGoTo(int zone, bool leftOrRight) {
+  if (zone == 0) {
+    return leftOrRight ? "H" : "G";
+  }
+  if (zone == 1) {
+    return leftOrRight ? "J" : "I";
+  }
+  if (zone == 2) {
+    return leftOrRight ? "K" : "L";
+  }
+  if (zone == 3) {
+    return leftOrRight ? "A" : "B";
+  }
+  if (zone == 4) {
+    return leftOrRight ? "C" : "D";
+  }
+  if (zone == 5) {
+    return leftOrRight ? "F" : "E";
+  }
+  return "A";
+}
+
+std::string Drive::WhatAlgaeToGoTo(int zone) {
+  if (zone == 0) {
+    return "GHAlgae";
+  }
+  if (zone == 1) {
+    return "IJAlgae";
+  }
+  if (zone == 2) {
+    return "KLAlgae";
+  }
+  if (zone == 3) {
+    return "ABAlgae";
+  }
+  if (zone == 4) {
+    return "CDAlgae";
+  }
+  if (zone == 5) {
+    return "EFAlgae";
+  }
+  return "A";
+}
+
+// 0 is the side closer to the middle of the field, CCW+ when viewed from the
+// top
+int Drive::WhatReefZoneAmIIn() {
+  frc::Translation2d reefCenter{4.482401371002197_m, 4.037817478179932_m};
+  units::radian_t rotationAmount = 0_deg;
+  if (str::IsOnRed()) {
+    reefCenter = pathplanner::FlippingUtil::flipFieldPosition(reefCenter);
+    rotationAmount = 180_deg;
+  }
+
+  units::radian_t angle = units::math::atan2(
+      GetRobotPose().Y() - reefCenter.Y(), GetRobotPose().X() - reefCenter.X());
+
+  units::radian_t normalizedAngle =
+      units::math::fmod(angle + units::radian_t{2 * std::numbers::pi},
+                        units::radian_t{2 * std::numbers::pi});
+
+  units::radian_t rotatedAngle = units::math::fmod(
+      normalizedAngle + units::radian_t{std::numbers::pi / 6} + rotationAmount,
+      units::radian_t{2 * std::numbers::pi});
+
+  units::radian_t sliceWidth = units::radian_t{2 * std::numbers::pi} / 6.0;
+
+  int sliceIndex = static_cast<int>(rotatedAngle / sliceWidth);
+
+  return sliceIndex;
+}
+
+void Drive::SetupPathplanner() {
+  ppControllers = std::make_shared<pathplanner::PPHolonomicDriveController>(
+      pathplanner::PIDConstants{consts::swerve::pathplanning::POSE_P,
+                                consts::swerve::pathplanning::POSE_I,
+                                consts::swerve::pathplanning::POSE_D},
+      pathplanner::PIDConstants{consts::swerve::pathplanning::ROTATION_P,
+                                consts::swerve::pathplanning::ROTATION_I,
+                                consts::swerve::pathplanning::ROTATION_D});
+
+  pathplanner::AutoBuilder::configure(
+      [this]() { return GetRobotPose(); },
+      [this](frc::Pose2d pose) { swerveDrive.ResetPose(pose); },
+      [this]() { return swerveDrive.GetRobotRelativeSpeeds(); },
+      [this](frc::ChassisSpeeds speeds, pathplanner::DriveFeedforwards ff) {
+        swerveDrive.Drive(speeds, false);
+        swerveDrive.SetXModuleForces(ff.robotRelativeForcesX);
+        swerveDrive.SetYModuleForces(ff.robotRelativeForcesY);
+      },
+      ppControllers, consts::swerve::pathplanning::config,
+      []() { return str::IsOnRed(); }, this);
+
+  pathplanner::PathPlannerLogging::setLogActivePathCallback(
+      [this](std::vector<frc::Pose2d> poses) {
+        swerveDrive.SetActivePath(poses);
+      });
+}
 
 frc2::CommandPtr Drive::SysIdSteerQuasistaticVoltage(
     frc2::sysid::Direction dir) {

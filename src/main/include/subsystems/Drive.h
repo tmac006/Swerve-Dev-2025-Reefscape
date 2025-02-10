@@ -1,3 +1,7 @@
+// Copyright (c) FRC 2053.
+// Open Source Software; you can modify and/or share it under the terms of
+// the MIT License file in the root of this project
+
 #pragma once
 
 #include <frc2/command/SubsystemBase.h>
@@ -6,11 +10,16 @@
 
 #include <functional>
 #include <memory>
+#include <string>
+#include <unordered_map>
 
+#include "Constants.h"
 #include "ctre/phoenix6/SignalLogger.hpp"
 #include "frc/geometry/Pose2d.h"
+#include "frc2/command/CommandPtr.h"
 #include "str/swerve/SwerveDrive.h"
 #include "str/swerve/SwerveModuleHelpers.h"
+#include "units/angle.h"
 #include "units/angular_velocity.h"
 #include "units/current.h"
 #include "units/time.h"
@@ -24,7 +33,8 @@ class Drive : public frc2::SubsystemBase {
   void UpdateOdom();
   frc::Pose2d GetRobotPose() const;
   frc::Pose2d GetOdomPose() const;
-  //void SetupPathplanner();
+  units::radian_t GetGyroYaw() const { return swerveDrive.GetYawFromImu(); }
+  void SetupPathplanner();
   void AddVisionMeasurement(const frc::Pose2d& measurement,
                             units::second_t timestamp,
                             const Eigen::Vector3d& stdDevs);
@@ -38,6 +48,11 @@ class Drive : public frc2::SubsystemBase {
       std::function<units::meters_per_second_t()> xVel,
       std::function<units::meters_per_second_t()> yVel,
       std::function<units::radians_per_second_t()> omega);
+
+  frc2::CommandPtr AlignToReef(std::function<bool()> leftSide);
+  frc2::CommandPtr AlignToAlgae();
+  frc2::CommandPtr AlignToProcessor();
+  frc2::CommandPtr DriveToPose(std::function<frc::Pose2d()> goalPose);
 
   frc2::CommandPtr SysIdSteerQuasistaticVoltage(frc2::sysid::Direction dir);
   frc2::CommandPtr SysIdSteerDynamicVoltage(frc2::sysid::Direction dir);
@@ -55,7 +70,42 @@ class Drive : public frc2::SubsystemBase {
   str::swerve::SwerveDrive swerveDrive{};
   std::shared_ptr<pathplanner::PPHolonomicDriveController> ppControllers;
 
+  frc::TrapezoidProfile<units::meters>::Constraints translationConstraints{
+      consts::swerve::physical::DRIVE_MAX_SPEED,
+      consts::swerve::physical::MAX_ACCEL,
+  };
+
+  frc::TrapezoidProfile<units::radians>::Constraints rotationConstraints{
+      consts::swerve::physical::MAX_ROT_SPEED,
+      consts::swerve::physical::MAX_ROT_ACCEL,
+  };
+
+  frc::ProfiledPIDController<units::meters> xPoseController{
+      consts::swerve::pathplanning::POSE_P,
+      consts::swerve::pathplanning::POSE_I,
+      consts::swerve::pathplanning::POSE_D, translationConstraints};
+
+  frc::ProfiledPIDController<units::meters> yPoseController{
+      consts::swerve::pathplanning::POSE_P,
+      consts::swerve::pathplanning::POSE_I,
+      consts::swerve::pathplanning::POSE_D, translationConstraints};
+
+  frc::ProfiledPIDController<units::radians> thetaController{
+      consts::swerve::pathplanning::ROTATION_P,
+      consts::swerve::pathplanning::ROTATION_I,
+      consts::swerve::pathplanning::ROTATION_D, rotationConstraints};
+
+  std::shared_ptr<nt::NetworkTable> nt{
+      nt::NetworkTableInstance::GetDefault().GetTable("Swerve")};
+  nt::StructPublisher<frc::Pose2d> pidPoseSetpointPub{
+      nt->GetStructTopic<frc::Pose2d>("PIDToPoseSetpoint").Publish()};
+
   str::swerve::WheelRadiusCharData wheelRadiusData{};
+
+  std::unordered_map<std::string, frc::Pose2d> importantPoses{};
+  int WhatReefZoneAmIIn();
+  std::string WhatPoleToGoTo(int zone, bool leftOrRight);
+  std::string WhatAlgaeToGoTo(int zone);
 
   frc2::sysid::SysIdRoutine steerSysIdVoltage{
       frc2::sysid::Config{

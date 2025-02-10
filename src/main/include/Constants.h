@@ -1,7 +1,13 @@
 #pragma once
 
 #include <frc/apriltag/AprilTagFieldLayout.h>
+
+#include "frc/apriltag/AprilTag.h"
 #include "frc/apriltag/AprilTagFields.h"
+#include "frc/geometry/Pose3d.h"
+#include "frc/geometry/Quaternion.h"
+#include "frc/geometry/Rotation3d.h"
+#include "frc/geometry/Translation3d.h"
 
 #include <units/angular_acceleration.h>
 #include <units/frequency.h>
@@ -13,9 +19,18 @@
 #include "str/swerve/SwerveModuleHelpers.h"
 #include "units/angle.h"
 
+
 namespace consts::yearspecific {
 inline const frc::AprilTagFieldLayout TAG_LAYOUT =
-    frc::AprilTagFieldLayout::LoadField(frc::AprilTagField::kDefaultField);
+    frc::AprilTagFieldLayout::LoadField(frc::AprilTagField::k2025Reefscape);
+// inline const frc::AprilTag singleTagTesting{
+//     19,
+//     frc::Pose3d{frc::Translation3d{4.073905999999999_m, 4.745482_m,
+//     0.308102_m},
+//                 frc::Rotation3d{frc::Quaternion{0.5000000000000001, 0.0, 0.0,
+//                                                 0.8660254037844386}}}};
+// inline const frc::AprilTagFieldLayout TAG_LAYOUT =
+//     frc::AprilTagFieldLayout({singleTagTesting}, 17.548_m, 8.052_m);
 }  // namespace consts::yearspecific
 
 namespace consts::swerve {
@@ -89,6 +104,8 @@ inline constexpr units::meter_t TOTAL_WIDTH =
 inline constexpr units::meter_t TOTAL_LENGTH =
     DRIVEBASE_LENGTH + (2 * BUMPER_THICKNESS);
 
+inline constexpr units::meter_t MANIP_CENTER_OFFSET = 4.5_in;
+
 inline constexpr units::degree_t IMU_MOUNT_ROLL = 0_deg;
 inline constexpr units::degree_t IMU_MOUNT_PITCH = 0_deg;
 inline constexpr units::degree_t IMU_MOUNT_YAW = 0_deg;
@@ -149,6 +166,8 @@ inline const str::swerve::ModulePhysicalCharacteristics PHY_CHAR{
     consts::swerve::physical::COUPLING_RATIO,
     consts::swerve::physical::WHEEL_RADIUS};
 
+inline constexpr units::meters_per_second_t DRIVE_MAX_SPEED =
+    ((DRIVE_MOTOR.freeSpeed / 1_rad) / DRIVE_GEARING) * WHEEL_RADIUS;
 inline constexpr units::radians_per_second_t MAX_ROT_SPEED = 540_deg_per_s;
 inline constexpr units::radians_per_second_squared_t MAX_ROT_ACCEL =
     720_deg_per_s_sq;
@@ -180,34 +199,59 @@ inline const str::swerve::DriveGains DRIVE{
 };
 }  // namespace gains
 
-// namespace pathplanning {
+namespace pathplanning {
 
-// inline constexpr units::scalar_t POSE_P = 5;
-// inline constexpr units::scalar_t POSE_I = 0;
-// inline constexpr units::scalar_t POSE_D = 0;
+inline constexpr units::scalar_t POSE_P = 5;
+inline constexpr units::scalar_t POSE_I = 0;
+inline constexpr units::scalar_t POSE_D = 0;
 
-// inline constexpr units::scalar_t ROTATION_P = 5;
-// inline constexpr units::scalar_t ROTATION_I = 0;
-// inline constexpr units::scalar_t ROTATION_D = 0;
+inline constexpr units::scalar_t ROTATION_P = 5;
+inline constexpr units::scalar_t ROTATION_I = 0;
+inline constexpr units::scalar_t ROTATION_D = 0;
 
-// // Choreo paths don't support replanning, so just disable me
-// inline constexpr bool INITIAL_REPLAN = false;
-// inline constexpr bool DYNAMIC_REPLAN = false;
-// inline constexpr units::meter_t DYNAMIC_REPLAN_THRESHOLD_TOTAL = 3_ft;
-// inline constexpr units::meter_t DYNAMIC_REPLAN_THRESHOLD_SPIKE = 1_ft;
+// Choreo paths don't support replanning, so just disable me
+inline constexpr bool INITIAL_REPLAN = false;
+inline constexpr bool DYNAMIC_REPLAN = false;
+inline constexpr units::meter_t DYNAMIC_REPLAN_THRESHOLD_TOTAL = 3_ft;
+inline constexpr units::meter_t DYNAMIC_REPLAN_THRESHOLD_SPIKE = 1_ft;
 
-// inline static pathplanner::RobotConfig config =
-//     pathplanner::RobotConfig::fromGUISettings();
+inline static pathplanner::RobotConfig config =
+    pathplanner::RobotConfig::fromGUISettings();
 
-// inline constexpr units::meter_t translationalPIDTolerance = .5_in;
-// inline constexpr units::meters_per_second_t translationalVelPIDTolerance =
-//     .25_fps;
-// inline constexpr units::radian_t rotationalPIDTolerance = 1_deg;
-// inline constexpr units::radians_per_second_t rotationalVelPIDTolerance =
-//     1_deg_per_s;
-// inline constexpr units::meters_per_second_t translationalVelPIDDeadband =
-//     0.1_fps;
-// inline constexpr units::radians_per_second_t rotationalVelPIDDeadband =
-//     0.5_deg_per_s;
-// }  // namespace pathplanning
+inline constexpr units::meter_t translationalPIDTolerance = .5_in;
+inline constexpr units::meters_per_second_t translationalVelPIDTolerance =
+    .25_fps;
+inline constexpr units::radian_t rotationalPIDTolerance = 1_deg;
+inline constexpr units::radians_per_second_t rotationalVelPIDTolerance =
+    1_deg_per_s;
+inline constexpr units::meters_per_second_t translationalVelPIDDeadband =
+    0.1_fps;
+inline constexpr units::radians_per_second_t rotationalVelPIDDeadband =
+    0.5_deg_per_s;
+}  // namespace pathplanning
 }  // namespace consts::swerve
+
+namespace consts::vision {
+inline const std::string FL_CAM_NAME{"str_fl_cam"};
+inline const frc::Transform3d FL_ROBOT_TO_CAM{
+    frc::Translation3d{0.265256_m, 0.2770_m, 0.209751_m},
+    frc::Rotation3d{0_rad, -20_deg, -20_deg}};
+
+inline const std::string FR_CAM_NAME{"str_fr_cam"};
+inline const frc::Transform3d FR_ROBOT_TO_CAM{
+    frc::Translation3d{0.265256_m, -0.2770_m, 0.209751_m},
+    frc::Rotation3d{0_rad, -20_deg, 20_deg}};
+
+inline const std::string BL_CAM_NAME{"str_bl_cam"};
+inline const frc::Transform3d BL_ROBOT_TO_CAM{
+    frc::Translation3d{-0.265256_m, 0.2770_m, 0.209751_m},
+    frc::Rotation3d{0_rad, -20_deg, 160_deg}};
+
+inline const std::string BR_CAM_NAME{"str_br_cam"};
+inline const frc::Transform3d BR_ROBOT_TO_CAM{
+    frc::Translation3d{-0.265256_m, -0.2770_m, 0.209751_m},
+    frc::Rotation3d{0_rad, -20_deg, -160_deg}};
+
+inline const Eigen::Matrix<double, 3, 1> SINGLE_TAG_STD_DEV{4, 4, 8};
+inline const Eigen::Matrix<double, 3, 1> MULTI_TAG_STD_DEV{0.5, 0.5, 1};
+}  // namespace consts::vision
