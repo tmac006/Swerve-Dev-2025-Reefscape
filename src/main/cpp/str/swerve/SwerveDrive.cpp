@@ -16,12 +16,14 @@
 #include "frc/kinematics/SwerveModuleState.h"
 #include "frc/smartdashboard/SmartDashboard.h"
 #include "str/DriverstationUtils.h"
-#include "str/Math.h"
+#include "Math.h"
 #include "str/swerve/SwerveModuleHelpers.h"
 #include "units/angle.h"
 #include "units/angular_velocity.h"
 #include "units/current.h"
 #include "units/voltage.h"
+
+#include "str/Math.h"
 
 using namespace str::swerve;
 
@@ -37,6 +39,11 @@ SwerveDrive::SwerveDrive()
 
 frc::ChassisSpeeds SwerveDrive::GetRobotRelativeSpeeds() {
   return consts::swerve::physical::KINEMATICS.ToChassisSpeeds(moduleStates);
+}
+
+frc::ChassisSpeeds SwerveDrive::GetFieldRelativeSpeeds() {
+  return frc::ChassisSpeeds::FromRobotRelativeSpeeds(GetRobotRelativeSpeeds(),
+                                                     GetPose().Rotation());
 }
 
 frc::Pose2d SwerveDrive::GetPose() const {

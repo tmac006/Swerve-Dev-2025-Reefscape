@@ -1,7 +1,3 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 #pragma once
 
 #include <frc2/command/CommandPtr.h>
@@ -10,14 +6,23 @@
 
 #include <functional>
 #include <memory>
+#include <string>
+#include <unordered_map>
 
+#include "Autos.h"
+#include "frc/geometry/Pose2d.h"
+#include "frc2/command/button/Trigger.h"
 #include "subsystems/Drive.h"
 
 
 class RobotContainer {
  public:
   RobotContainer();
+
+  frc2::Command* GetAutonomousCommand();
   Drive& GetDrive();
+
+
  private:
   void ConfigureBindings();
   void ConfigureSysIdBinds();
@@ -32,7 +37,7 @@ class RobotContainer {
   frc2::CommandXboxController driverJoystick{0};
 
   Drive driveSub{};
-
+  
   std::shared_ptr<nt::NetworkTable> tuningTable{
       nt::NetworkTableInstance::GetDefault().GetTable("Tuning")};
   frc2::NetworkButton steerTuneBtn{tuningTable, "SteerPidTuning"};
@@ -42,4 +47,13 @@ class RobotContainer {
                                                  "SteerSysIdTorqueCurrent"};
   frc2::NetworkButton driveSysIdBtn{tuningTable, "DriveSysId"};
   frc2::NetworkButton wheelRadiusBtn{tuningTable, "WheelRadius"};
+  frc2::NetworkButton elevatorTuneBtn{tuningTable, "ElevatorPidTuning"};
+  frc2::NetworkButton elevatorSysIdVoltsBtn{tuningTable, "ElevatorSysIdVolts"};
+  frc2::NetworkButton pivotTuneBtn{tuningTable, "PivotPidTuning"};
+  frc2::NetworkButton pivotSysIdVoltsBtn{tuningTable, "PivotSysIdVolts"};
+  frc2::NetworkButton algaePivotTuneBtn{tuningTable, "AlgaePivotPidTuning"};
+  frc2::NetworkButton algaePivotSysIdVoltsBtn{tuningTable,
+                                              "AlgaePivotSysIdVolts"};
+  frc2::NetworkButton coastElevatorBtn{tuningTable, "CoastElevator"};
+  frc2::NetworkButton coastPivotBtn{tuningTable, "CoastPivot"};
 };

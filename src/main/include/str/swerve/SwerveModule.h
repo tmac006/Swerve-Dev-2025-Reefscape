@@ -8,13 +8,13 @@
 #include <ctre/phoenix6/CANcoder.hpp>
 #include <ctre/phoenix6/TalonFX.hpp>
 
+#include "str/swerve/SwerveModuleSim.h"
 #include "SwerveModuleHelpers.h"
 #include "ctre/phoenix6/StatusSignal.hpp"
 #include "ctre/phoenix6/controls/TorqueCurrentFOC.hpp"
 #include "frc/kinematics/SwerveModulePosition.h"
 #include "frc/kinematics/SwerveModuleState.h"
 #include "str/swerve/SwerveModuleHelpers.h"
-#include "str/swerve/SwerveModuleSim.h"
 #include "units/current.h"
 #include "units/dimensionless.h"
 #include "units/velocity.h"

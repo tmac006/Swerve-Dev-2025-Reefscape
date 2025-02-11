@@ -10,6 +10,7 @@
 #include "frc/DataLogManager.h"
 #include "frc/RobotBase.h"
 #include "str/GainTypes.h"
+#include "str/swerve/SwerveModuleSim.h"
 #include "units/angle.h"
 #include "units/current.h"
 

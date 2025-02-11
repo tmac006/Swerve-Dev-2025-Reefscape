@@ -69,8 +69,8 @@ inline constexpr frc::DCMotor DRIVE_MOTOR = frc::DCMotor::KrakenX60FOC(1);
 inline constexpr frc::DCMotor STEER_MOTOR = frc::DCMotor::KrakenX60FOC(1);
 
 inline constexpr units::scalar_t STEER_GEARING = 7.363636363636365;
-// L2
-inline constexpr units::scalar_t DRIVE_GEARING = 15.42857142857143
+// L3
+inline constexpr units::scalar_t DRIVE_GEARING = 15.42857142857143;
 inline constexpr units::scalar_t COUPLING_RATIO = 3.8181818181818183;
 inline constexpr units::meter_t WHEEL_RADIUS = 2.167_in;
 
