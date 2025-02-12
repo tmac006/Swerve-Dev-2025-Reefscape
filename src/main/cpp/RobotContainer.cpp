@@ -5,12 +5,13 @@
 #include <frc2/command/button/RobotModeTriggers.h>
 #include <cstddef>
 
-#include "Constants.h"
+#include "constants/SwerveConstants.h"
 #include "frc/RobotBase.h"
 #include "frc/filter/Debouncer.h"
 #include "frc2/command/button/Trigger.h"
 #include "frc2/command/sysid/SysIdRoutine.h"
 #include "str/DriverstationUtils.h"
+#include "str/vision/VisionSystem.h"
 #include "subsystems/Drive.h"
 
 RobotContainer::RobotContainer() {
@@ -44,13 +45,21 @@ void RobotContainer::ConfigureSysIdBinds() {
   tuningTable->PutBoolean("SteerSysIdTorqueCurrent", false);
   tuningTable->PutBoolean("DriveSysId", false);
   tuningTable->PutBoolean("WheelRadius", false);
+  tuningTable->PutBoolean("ElevatorPidTuning", false);
+  tuningTable->PutBoolean("ElevatorSysIdVolts", false);
+  tuningTable->PutBoolean("PivotPidTuning", false);
+  tuningTable->PutBoolean("PivotSysIdVolts", false);
+  tuningTable->PutBoolean("AlgaePivotSysIdVolts", false);
+  tuningTable->PutBoolean("AlgaePivotPidTuning", false);
+  tuningTable->PutBoolean("CoastElevator", false);
+  tuningTable->PutBoolean("CoastPivot", false);
   tuningTable->PutBoolean("Quasistatic", true);
   tuningTable->PutBoolean("Forward", true);
 
   steerTuneBtn.OnTrue(
       driveSub.TuneSteerPID([this] { return !steerTuneBtn.Get(); }));
   driveTuneBtn.OnTrue(
-      driveSub.TuneDrivePID([this] { return !driveTuneBtn.Get(); })); 
+      driveSub.TuneDrivePID([this] { return !driveTuneBtn.Get(); }));
 
   steerSysIdVoltsBtn.WhileTrue(SteerVoltsSysIdCommands(
       [this] { return tuningTable->GetBoolean("Forward", true); },
@@ -101,6 +110,8 @@ frc2::CommandPtr RobotContainer::SteerTorqueCurrentSysIdCommands(
       fwd);
 }
 
+
+
 frc2::CommandPtr RobotContainer::DriveSysIdCommands(
     std::function<bool()> fwd, std::function<bool()> quasistatic) {
   return frc2::cmd::Either(
@@ -133,3 +144,14 @@ Drive& RobotContainer::GetDrive() {
   return driveSub;
 }
 
+
+str::vision::VisionSystem& RobotContainer::GetVision() {
+  return vision;
+}
+
+frc2::Trigger RobotContainer::NoButtonsPressed() {
+  return frc2::Trigger{[this] {
+    return !driverJoystick.A().Get() && !driverJoystick.B().Get() &&
+           !driverJoystick.X().Get() && !driverJoystick.Y().Get();
+  }};
+}

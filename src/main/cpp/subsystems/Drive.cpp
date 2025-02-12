@@ -8,8 +8,8 @@
 #include <memory>
 #include <numbers>
 #include <string>
-
-#include "Constants.h"
+#include "Constants/Constants.h"
+#include "Constants/SwerveConstants.h"
 #include "frc/MathUtil.h"
 #include "frc/geometry/Pose2d.h"
 #include "frc/geometry/Translation2d.h"

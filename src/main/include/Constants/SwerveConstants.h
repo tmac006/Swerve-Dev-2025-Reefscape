@@ -1,14 +1,5 @@
 #pragma once
 
-#include <frc/apriltag/AprilTagFieldLayout.h>
-
-#include "frc/apriltag/AprilTag.h"
-#include "frc/apriltag/AprilTagFields.h"
-#include "frc/geometry/Pose3d.h"
-#include "frc/geometry/Quaternion.h"
-#include "frc/geometry/Rotation3d.h"
-#include "frc/geometry/Translation3d.h"
-
 #include <units/angular_acceleration.h>
 #include <units/frequency.h>
 
@@ -18,20 +9,6 @@
 #include "pathplanner/lib/config/RobotConfig.h"
 #include "str/swerve/SwerveModuleHelpers.h"
 #include "units/angle.h"
-
-
-namespace consts::yearspecific {
-inline const frc::AprilTagFieldLayout TAG_LAYOUT =
-    frc::AprilTagFieldLayout::LoadField(frc::AprilTagField::k2025Reefscape);
-// inline const frc::AprilTag singleTagTesting{
-//     19,
-//     frc::Pose3d{frc::Translation3d{4.073905999999999_m, 4.745482_m,
-//     0.308102_m},
-//                 frc::Rotation3d{frc::Quaternion{0.5000000000000001, 0.0, 0.0,
-//                                                 0.8660254037844386}}}};
-// inline const frc::AprilTagFieldLayout TAG_LAYOUT =
-//     frc::AprilTagFieldLayout({singleTagTesting}, 17.548_m, 8.052_m);
-}  // namespace consts::yearspecific
 
 namespace consts::swerve {
 
@@ -229,28 +206,3 @@ inline constexpr units::radians_per_second_t rotationalVelPIDDeadband =
     0.5_deg_per_s;
 }  // namespace pathplanning
 }  // namespace consts::swerve
-
-namespace consts::vision {
-inline const std::string FL_CAM_NAME{"str_fl_cam"};
-inline const frc::Transform3d FL_ROBOT_TO_CAM{
-    frc::Translation3d{0.265256_m, 0.2770_m, 0.209751_m},
-    frc::Rotation3d{0_rad, -20_deg, -20_deg}};
-
-inline const std::string FR_CAM_NAME{"str_fr_cam"};
-inline const frc::Transform3d FR_ROBOT_TO_CAM{
-    frc::Translation3d{0.265256_m, -0.2770_m, 0.209751_m},
-    frc::Rotation3d{0_rad, -20_deg, 20_deg}};
-
-inline const std::string BL_CAM_NAME{"str_bl_cam"};
-inline const frc::Transform3d BL_ROBOT_TO_CAM{
-    frc::Translation3d{-0.265256_m, 0.2770_m, 0.209751_m},
-    frc::Rotation3d{0_rad, -20_deg, 160_deg}};
-
-inline const std::string BR_CAM_NAME{"str_br_cam"};
-inline const frc::Transform3d BR_ROBOT_TO_CAM{
-    frc::Translation3d{-0.265256_m, -0.2770_m, 0.209751_m},
-    frc::Rotation3d{0_rad, -20_deg, -160_deg}};
-
-inline const Eigen::Matrix<double, 3, 1> SINGLE_TAG_STD_DEV{4, 4, 8};
-inline const Eigen::Matrix<double, 3, 1> MULTI_TAG_STD_DEV{0.5, 0.5, 1};
-}  // namespace consts::vision

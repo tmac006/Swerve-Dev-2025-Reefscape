@@ -4,8 +4,8 @@
 #include <frc/DriverStation.h>
 
 #include <vector>
-
-#include "Constants.h"
+#include "Constants/Constants.h"
+#include "Constants/SwerveConstants.h"
 #include "ctre/phoenix/StatusCodes.h"
 #include "ctre/phoenix6/StatusSignal.hpp"
 #include "frc/Alert.h"
@@ -16,14 +16,12 @@
 #include "frc/kinematics/SwerveModuleState.h"
 #include "frc/smartdashboard/SmartDashboard.h"
 #include "str/DriverstationUtils.h"
-#include "Math.h"
+#include "str/Math.h"
 #include "str/swerve/SwerveModuleHelpers.h"
 #include "units/angle.h"
 #include "units/angular_velocity.h"
 #include "units/current.h"
 #include "units/voltage.h"
-
-#include "str/Math.h"
 
 using namespace str::swerve;
 
@@ -343,12 +341,12 @@ std::array<units::ampere_t, 4> SwerveDrive::ConvertModuleForcesToTorqueCurrent(
   return retVal;
 }
 
-str::gains::radial::AmpRadialGainsHolder SwerveDrive::GetSteerGains() const {
+str::gains::radial::VoltRadialGainsHolder SwerveDrive::GetSteerGains() const {
   return modules[0].GetSteerGains();
 }
 
 void SwerveDrive::SetSteerGains(
-    str::gains::radial::AmpRadialGainsHolder newGains) {
+    str::gains::radial::VoltRadialGainsHolder newGains) {
   for (int i = 0; i < 4; i++) {
     modules[i].SetSteerGains(newGains);
   }

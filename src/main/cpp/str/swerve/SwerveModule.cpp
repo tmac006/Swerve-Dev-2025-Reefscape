@@ -18,7 +18,7 @@ using namespace str::swerve;
 
 SwerveModule::SwerveModule(const ModuleConstants& consts,
                            const ModulePhysicalCharacteristics& physical,
-                           str::gains::radial::AmpRadialGainsHolder steer,
+                           str::gains::radial::VoltRadialGainsHolder steer,
                            DriveGains drive)
     : moduleNamePrefix{consts.moduleName},
       encoderAlertMsg{moduleNamePrefix + " Steer Encoder Configuration"},
@@ -162,7 +162,7 @@ frc::SwerveModuleState SwerveModule::UpdateSimulatedModule(
 }
 
 void SwerveModule::SetSteerGains(
-    str::gains::radial::AmpRadialGainsHolder newGains) {
+    str::gains::radial::VoltRadialGainsHolder newGains) {
   steerGains = newGains;
   ctre::phoenix6::configs::Slot0Configs steerSlotConfig{};
   steerSlotConfig.kV = steerGains.kV.value();
@@ -216,7 +216,7 @@ void SwerveModule::SetDriveGains(str::swerve::DriveGains newGains) {
   }
 }
 
-str::gains::radial::AmpRadialGainsHolder SwerveModule::GetSteerGains() const {
+str::gains::radial::VoltRadialGainsHolder SwerveModule::GetSteerGains() const {
   return steerGains;
 }
 
